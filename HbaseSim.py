@@ -93,8 +93,33 @@ class HbaseSimulator:
     def deleteAll(self):
         pass
 
-    def count(self):
-        pass
+    def count(self, table_name: str, search_param: str = None) -> int:
+        # Verificar si la tabla existe
+        if table_name not in self.table_names:
+            print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
+            return False
+
+        with open(f'./HbaseCollections/{table_name}.csv', 'r') as file:
+            reader = csv.reader(file)
+            headers = next(reader)
+
+            # Contar el total de filas
+            if search_param is None:
+                count = 0
+                for row in reader:
+                    count += 1
+                print(f"\n=> Hbase::Table - {table_name} has {count} rows.\n")
+                return count
+
+            # Contar solo filas que coinciden con el parÃÂ¡metro de bÃÂºsqueda
+            else:
+                row_count = 0
+                for row in reader:
+                    if search_param in row:
+                        row_count += 1
+                print(f"\n=> Hbase::Table - {table_name} has {row_count} rows that match the search parameter '{search_param}'.\n")
+                return row_count
+        
 
     def truncate(self):
         pass
@@ -299,5 +324,7 @@ clear_screen()
 # hbase.create(command)
 # hbase.list_()
 # hbase.disable(command)
-hbase.disable("disable 'empleado'")
+#hbase.disable("disable 'empleado'")
 hbase.scan("scan 'empleado'")
+hbase.count('empleado') #contar la cantidad de filas de la tabla
+hbase.count('empleado', 'nombre') #Busquedas que coinciden un parametro de busqueda
