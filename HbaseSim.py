@@ -9,6 +9,8 @@ class HbaseSimulator:
     def __init__(self) -> None:
         self.IP = "198.167.0.1"
         self.tables = {}
+        self.table_names = []
+        self.disabled_tables = []
 
     def put(self):
         pass
@@ -31,8 +33,32 @@ class HbaseSimulator:
     def truncate(self):
         pass
 
-    def disable(self):
-        pass
+    def disable(self, command):
+        # Setting the start time of the function
+        start = time.time()
+        # Removing the disable command from the command and splitting the command
+        command = command.replace("disable", "").replace(' ', '').split(",")
+        # Checking the command syntax
+        if len(command) < 1:
+            print(
+                f"\nValue error on: {command}\nToo many arguments for disable fuction.\nUsage: disable '<table_name>'\n"
+            )
+            return False
+        elif command[0][-1] != "'" or command[0][0] != "'":
+            print(
+                f"\nSyntax error on: {command[0]}\nCorrect use of single quotes is required.\nUsage: disable '<table_name>'\n"
+            )
+            return False
+        # Getting the table name from the command
+        command = command[0].replace("'", "")
+        self.disabled_tables.append(command)
+        # Setting the end time of the function and printing the results
+        end = time.time()
+        # printing the results
+        print(f'0 row(s) in {round(end-start,4)} seconds')
+        print(f"\n=> Hbase::Table - {command} disabled")
+
+        return True
 
     def is_enabled(self):
         pass
@@ -50,6 +76,9 @@ class HbaseSimulator:
         pass
 
     def create(self, command: str) -> bool:
+        # Setting the start time of the function
+        start_time = time.time()
+        # Removing the create command from the command and splitting the command
         command = command.replace("create", "").replace(' ', '').split(",")
         if len(command) < 2:
             print(
@@ -60,6 +89,12 @@ class HbaseSimulator:
         value = command[0].replace("'", "")
         timestamp = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         rowKey = len(self.tables) + 1
+
+        # checking if the table already exists
+        if value in self.table_names:
+            print(f"\n=> Hbase::Table - {value} already exists.\n")
+            return False
+
         # Checking the command syntax
         for spec in command:
             if spec[0] != "'" or spec[-1] != "'":
@@ -96,8 +131,12 @@ class HbaseSimulator:
             writer = csv.writer(csv_file)
             writer.writerow(command)
 
+        # Adding the table to the tables dictionary
+        self.table_names.append(value)
+        # Setting the end time of the function and printing the results
+        end_time = time.time()
+        print(f'0 row(s) in {round(end_time - start_time,4)} seconds')
         print(f"\n=> Hbase::Table - {value} created")
-
         return True
 
     def list_(self):
@@ -109,7 +148,7 @@ class HbaseSimulator:
 
     def mainHBase(self):
         counter = 0
-        initial = input("\n\n\n\n\n\n[cloudera@quickstart ~]$ ")
+        initial = input("\n[cloudera@quickstart ~]$ ")
         # time.sleep(2)
         # Start the Hbase shell
         if initial == "hbase shell":
@@ -139,15 +178,38 @@ class HbaseSimulator:
                 elif command == "whoami":
                     print("cloudera (auth:SIMPLE)\n     groups: cloudera, default")
 
+                # Create table command
                 elif 'create' == command.split(" ")[0]:
                     # TODO Implement create table function
                     self.create(command)
 
+                # List tables command
+                elif command == 'list':
+                    self.list_()
+
+                # Disable table command
+                elif 'disable' == command.split(" ")[0]:
+                    self.disable(command)
+
+                elif command != '':
+                    print(f"ERROR: Unknown command '{command}'")
+        elif initial != '':
+            print(f"ERROR: Unknown command '{initial}'")
+
+
+def clear_screen():
+    if os.name == 'nt':
+        os.system('cls')
+    else:
+        os.system('clear')
+
 
 hbase = HbaseSimulator()
-# hbase.mainHBase()
+clear_screen()
+hbase.mainHBase()
 
 # create 'empleado', 'nombre', 'ID', 'puesto'
 # command = input('command test> ')
-# hbase.create(command)
-hbase.list_()
+# # hbase.create(command)
+# # hbase.list_()
+# hbase.disable(command)
