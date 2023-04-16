@@ -174,28 +174,25 @@ class HbaseSimulator:
         pass
 
     def drop(self, table_name: str) -> bool:
-        #Verificar si la tabla existe
+        
         if table_name not in self.table_names:
             print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
             return False
-        
-        #Eliminar archivo csv de la tabla
         os.remove(f'./HbaseCollections/{table_name}.csv')
-        
-        #Imprimir mensaje de confirmación
+        self.table_names.remove(table_name)
         print(f"\n=> Hbase::Table - {table_name} dropped.\n")
-        
         return True
     
-    
-    def dropAll(self) -> bool:
-        #Eliminar todos los archivos csv de la carpeta HbaseCollections
-        for table_name
-        
+    def dropAll(self):
+        for table_name in self.table_names:
+            self.drop(table_name)
+            os.remove(f'./HbaseCollections/{table_name}.csv')
+            self.table_names = []
+            print("\n=> Hbase::All tables dropped\n")
+            return True
             
-
-   
-
+        
+        
     def describe(self):
         pass
 
@@ -331,6 +328,14 @@ class HbaseSimulator:
                         table_name = args[1].replace("'", "")
                         search_string = args[2].replace("'", "")
                         self.count(table_name, search_string)
+                        
+                # Drop table command
+                elif 'drop' == command.split(" ")[0]:
+                    table_name = command.split(" ")[1].replace("'", "")
+                    hbase.drop(table_name)
+                    
+                elif command == 'drop_all':
+                    hbase.drop_all()
 
                 elif command != '':
                     print(f"ERROR: Unknown command '{command}'")
