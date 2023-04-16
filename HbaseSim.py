@@ -9,8 +9,38 @@ class HbaseSimulator:
     def __init__(self) -> None:
         self.IP = "198.167.0.1"
         self.tables = {}
-        self.table_names = []
-        self.disabled_tables = []
+        self.table_names = self.get_tables()
+
+    # -----------------------------helper functions-----------------------------
+
+    # Function to get all the tables in the HbaseCollections folder
+    def get_tables(self):
+        directory = "./HbaseCollections"
+        all_entries = os.listdir(directory)
+        file_names = [entry for entry in all_entries if os.path.isfile(
+            os.path.join(directory, entry))]
+        file_names = [file_name.replace(".csv", "")
+                      for file_name in file_names]
+        return file_names
+
+    # Function to get the number of rows in a table
+    def count_rows(self, table_name: str) -> int:
+        with open(f'./HbaseCollections/{table_name}.csv', 'r') as file:
+            reader = csv.reader(file)
+            headers = next(reader)
+            count = 0
+            for row in reader:
+                count += 1
+        return count
+
+    def check_string_in_file(self, search_string):
+        with open('./disabledTables.txt', 'r') as file:
+            for line in file:
+                if search_string in line:
+                    return True
+        return False
+
+    # -----------------------------hbase functions-----------------------------
 
     def put(self):
         pass
@@ -18,8 +48,44 @@ class HbaseSimulator:
     def get(self):
         pass
 
-    def scan(self):
-        pass
+    def scan(self, command: str):
+        command = command.replace("scan", "").replace(' ', '').split(",")
+
+        # Checking the command syntax
+        if len(command) != 1:
+            print(
+                f"\nValue error on: {command}\nToo many arguments for scan function.\nUsage: scan '<table_name>'\n"
+            )
+            return False
+
+        command = command[0].replace("'", "")
+        # Checking if the table exists
+        if command not in self.table_names:
+            print(f"\n=> Hbase::Table - {command} does not exist.\n")
+            return False
+
+        # checking if the table is disabled
+        if self.check_string_in_file(command):
+            print(f"\n=> Hbase::Table - {command} is disabled.\n")
+            return False
+
+        with open(f'./HbaseCollections/{command}.csv', 'r') as file:
+            reader = csv.reader(file)
+            headers = next(reader)
+            print("{:<10} {:<30}".format("ROW", "COLUMN+CELL"))
+            for row in reader:
+                if len(headers) != len(row):
+                    print('\n')
+                    return False
+                row_key = row[0]
+                row_str = "{:<10} ".format(row_key)
+                column_cell_str = ""
+                for i in range(1, len(headers)):
+                    column_cell_str += "{}: ={}, ".format(headers[i], row[i])
+                column_cell_str = column_cell_str.rstrip(', ')
+                print(row_str + column_cell_str)
+
+        return True
 
     def delete(self):
         pass
@@ -51,7 +117,23 @@ class HbaseSimulator:
             return False
         # Getting the table name from the command
         command = command[0].replace("'", "")
-        self.disabled_tables.append(command)
+
+        direc = './HbaseCollections'
+        filename = f'{command}.csv'
+        file_path = os.path.join(direc, filename)
+
+        # Checking if the table exists
+        if os.path.exists(file_path):
+            # Write the name of the table on the disabled tables txt file
+            with open("./disabledTables.txt", 'w') as file:
+                file_contents = file.read()
+                if command not in file_contents:
+                    file.write(command)
+                    file.write('\n')
+        else:
+            print(f"\n=> Hbase::Table - {command} does not exist.\n")
+            return False
+
         # Setting the end time of the function and printing the results
         end = time.time()
         # printing the results
@@ -75,6 +157,7 @@ class HbaseSimulator:
     def describe(self):
         pass
 
+    # Creates a table
     def create(self, command: str) -> bool:
         # Setting the start time of the function
         start_time = time.time()
@@ -116,7 +199,6 @@ class HbaseSimulator:
 
         # Adding the meta data to the default table
         # If the table already exists, it will be updated, else it will be created
-
         if not os.listdir("./HbaseCollections"):
             filename = os.path.join("./HbaseCollections", f"TABLE.csv")
             df = pd.DataFrame(meta_data, index=[0])
@@ -139,6 +221,7 @@ class HbaseSimulator:
         print(f"\n=> Hbase::Table - {value} created")
         return True
 
+    # Lists all the tables
     def list_(self):
 
         files = os.listdir("./HbaseCollections")
@@ -191,6 +274,9 @@ class HbaseSimulator:
                 elif 'disable' == command.split(" ")[0]:
                     self.disable(command)
 
+                elif 'scan' == command.split(" ")[0]:
+                    self.scan(command)
+
                 elif command != '':
                     print(f"ERROR: Unknown command '{command}'")
         elif initial != '':
@@ -206,10 +292,12 @@ def clear_screen():
 
 hbase = HbaseSimulator()
 clear_screen()
-hbase.mainHBase()
+# hbase.mainHBase()
 
 # create 'empleado', 'nombre', 'ID', 'puesto'
 # command = input('command test> ')
-# # hbase.create(command)
-# # hbase.list_()
+# hbase.create(command)
+# hbase.list_()
 # hbase.disable(command)
+hbase.disable("disable 'empleado'")
+hbase.scan("scan 'empleado'")
