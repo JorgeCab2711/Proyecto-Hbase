@@ -173,11 +173,28 @@ class HbaseSimulator:
     def alter(self):
         pass
 
-    def drop(self):
-        pass
+    def drop(self, table_name: str) -> bool:
+        #Verificar si la tabla existe
+        if table_name not in self.table_names:
+            print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
+            return False
+        
+        #Eliminar archivo csv de la tabla
+        os.remove(f'./HbaseCollections/{table_name}.csv')
+        
+        #Imprimir mensaje de confirmación
+        print(f"\n=> Hbase::Table - {table_name} dropped.\n")
+        
+        return True
+    
+    
+    def dropAll(self) -> bool:
+        #Eliminar todos los archivos csv de la carpeta HbaseCollections
+        for table_name
+        
+            
 
-    def drop_all(self):
-        pass
+   
 
     def describe(self):
         pass
@@ -301,6 +318,19 @@ class HbaseSimulator:
 
                 elif 'scan' == command.split(" ")[0]:
                     self.scan(command)
+                
+                elif 'count' == command.split(" ")[0]:
+                    #conseguir el nombre de la tabla y el nombre de la columna
+                    args = command.split(" ")
+                    if len(args) < 2 or len(args) > 3:
+                        print("Usage: count '<table_name>' [, '<search_string>']")
+                    elif len(args) == 2:
+                        table_name = args[1].replace("'", "")
+                        self.count(table_name)
+                    else:
+                        table_name = args[1].replace("'", "")
+                        search_string = args[2].replace("'", "")
+                        self.count(table_name, search_string)
 
                 elif command != '':
                     print(f"ERROR: Unknown command '{command}'")
@@ -325,6 +355,6 @@ clear_screen()
 # hbase.list_()
 # hbase.disable(command)
 #hbase.disable("disable 'empleado'")
-hbase.scan("scan 'empleado'")
-hbase.count('empleado') #contar la cantidad de filas de la tabla
-hbase.count('empleado', 'nombre') #Busquedas que coinciden un parametro de busqueda
+#hbase.scan("scan 'empleado'")
+#hbase.count('empleado') #contar la cantidad de filas de la tabla
+#hbase.count('empleado', 'nombre') #Busquedas que coinciden un parametro de busqueda
