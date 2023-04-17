@@ -105,12 +105,14 @@ class HbaseSimulator:
                         row[-1] = timestamp
                         break
                 if not found:
-                    print(f"\n=> Hbase::delete - Row ({column_name}) not found in table {table_name}\n")
+                    print(
+                        f"\n=> Hbase::delete - Row ({column_name}) not found in table {table_name}\n")
 
             with open(f'./HbaseCollections/{table_name}.csv', 'w+') as file:
                 writer = csv.writer(file)
                 writer.writerows(rows)
-            print(f"\n=> Hbase::delete - ({column_name}) deleted in {table_name} at {timestamp}\n")
+            print(
+                f"\n=> Hbase::delete - ({column_name}) deleted in {table_name} at {timestamp}\n")
             return True
 
         else:
@@ -142,31 +144,30 @@ class HbaseSimulator:
                 for row in reader:
                     if search_param in row:
                         row_count += 1
-                print(f"\n=> Hbase::Table - {table_name} has {row_count} rows that match the search parameter '{search_param}'.\n")
+                print(
+                    f"\n=> Hbase::Table - {table_name} has {row_count} rows that match the search parameter '{search_param}'.\n")
                 return row_count
-        
 
     def truncate(self, table_name: str) -> bool:
         if table_name not in self.table_names:
             print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
             return False
-        
+
         if self.check_string_in_file(table_name):
             print(f"\n=> Hbase::Table - {table_name} is disabled.\n")
             return False
-        
+
         self.disable(f"disable '{table_name}'")
-        
-        #abrir el archivo de la tabla 
+
+        # abrir el archivo de la tabla
         with open(f'./HbaseCollections/{table_name}.csv', 'r') as file:
             writer = csv.writer(file)
             headers = next(writer)
             writer.writerow(headers)
         print(f"\n=> Hbase::Table - {table_name} truncated.\n")
-        
+
         self.disable(f"enable '{table_name}'")
         return True
-
 
     def disable(self, command):
         # Setting the start time of the function
@@ -212,12 +213,11 @@ class HbaseSimulator:
 
         return True
 
-
     def alter(self):
         pass
 
     def drop(self, table_name: str) -> bool:
-        
+
         if table_name not in self.table_names:
             print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
             return False
@@ -225,7 +225,7 @@ class HbaseSimulator:
         self.table_names.remove(table_name)
         print(f"\n=> Hbase::Table - {table_name} dropped.\n")
         return True
-    
+
     def dropAll(self):
         for table_name in self.table_names:
             self.drop(table_name)
@@ -233,9 +233,7 @@ class HbaseSimulator:
             self.table_names = []
             print("\n=> Hbase::All tables dropped\n")
             return True
-            
-        
-        
+
     def describe(self):
         pass
 
@@ -310,7 +308,7 @@ class HbaseSimulator:
         for file in files:
             if os.path.isfile(os.path.join("./HbaseCollections", file)):
                 print(file.replace(".csv", ""))
-    
+
     def delete_all(self, command: str) -> bool:
         table_name = command.split(" ")[1].replace("'", "")
         if table_name not in self.table_names:
@@ -375,12 +373,13 @@ class HbaseSimulator:
 
                 elif 'scan' == command.split(" ")[0]:
                     self.scan(command)
-                
+
                 elif 'count' == command.split(" ")[0]:
-                    #conseguir el nombre de la tabla y el nombre de la columna
+                    # conseguir el nombre de la tabla y el nombre de la columna
                     args = command.split(" ")
                     if len(args) < 2 or len(args) > 3:
-                        print("Usage: count '<table_name>' [, '<search_string>']")
+                        print(
+                            "Usage: count '<table_name>' [, '<search_string>']")
                     elif len(args) == 2:
                         table_name = args[1].replace("'", "")
                         self.count(table_name)
@@ -388,25 +387,27 @@ class HbaseSimulator:
                         table_name = args[1].replace("'", "")
                         search_string = args[2].replace("'", "")
                         self.count(table_name, search_string)
-                        
+
                 # Drop table command
                 elif 'drop' == command.split(" ")[0]:
                     table_name = command.split(" ")[1].replace("'", "")
                     hbase.drop(table_name)
-                    
+
                 elif 'drop_all' == command.split(" ")[0]:
                     hbase.drop_all()
-                    
+
                 elif 'delete' == command.split(" ")[0]:
                     self.delete(command)
-                    
+
                 elif 'deleteall' == command.split(" ")[0]:
                     self.delete_all(command)
-                
+
                 elif 'truncate' == command.split(" ")[0]:
                     table_name = command.split(" ")[1].replace("'", "")
                     self.truncate(table_name)
-                
+
+                elif 'put' == command.split(" ")[0]:
+                    self.put(command)
 
                 elif command != '':
                     print(f"ERROR: Unknown command '{command}'")
@@ -446,13 +447,11 @@ class HbaseSimulator:
         try:
             row_index = df[df[column_subcol[0]] == filter].index[0]
             df.at[row_index, column_subcol[0]] = {
-                        filter: {column_subcol[1]: value}
-                    }
+                filter: {column_subcol[1]: value}
+            }
             df.to_csv(f"./HbaseCollections/{table}.csv", index=False)
         except:
             print(f'No row named {filter} in table {table}')
-        
-        
 
 
 def clear_screen():
@@ -464,22 +463,4 @@ def clear_screen():
 
 hbase = HbaseSimulator()
 clear_screen()
-# hbase.mainHBase()
-# create 'empleado', 'nombre', 'ID', 'puesto'
-# command = input('command test> ')
-# hbase.create(command)
-# hbase.list_()
-# hbase.disable(command)
-<<<<<<< Updated upstream
-#hbase.disable("disable 'empleado'")
-#hbase.scan("scan 'empleado'")
-#hbase.count('empleado') #contar la cantidad de filas de la tabla
-#hbase.count('empleado', 'nombre') #Busquedas que coinciden un parametro de busqueda
-=======
-# hbase.disable("disable 'empleado'")
-# hbase.scan("scan 'empleado'")
-
-# ALE : Delete all , drop all,  drop , Delete , count
-
-hbase.put("put 'empleado', 'Jorge', 'nombre:fullname', 'Jorge Caballeros'")
->>>>>>> Stashed changes
+hbase.mainHBase()
