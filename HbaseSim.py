@@ -3,7 +3,9 @@ from datetime import datetime
 import pandas as pd
 import csv
 import os
-
+import random
+import numpy as np
+import ast
 
 class HbaseSimulator:
     def __init__(self) -> None:
@@ -320,6 +322,7 @@ class HbaseSimulator:
                 return False
 
         command = [spec.replace("'", "") for spec in command]
+        command.insert(0, 'id')
 
         # setting the meta data
         meta_data = {}
@@ -472,42 +475,67 @@ class HbaseSimulator:
         elif initial != '':
             print(f"ERROR: Unknown command '{initial}'")
 
-    # Adds or updates data in a specified row of a table
+    def load_table(self, table: str):
+        if table not in self.tables:
+            if not self.table_exists(table):
+                print(f"\n=> Hbase::Table - {table} does not exist.\n")
+                return False
+            else:
+                self.tables[table] = pd.read_csv(f"./HbaseCollections/{table}.csv")
+        else:
+            self.tables[table] = pd.read_csv(f"./HbaseCollections/{table}.csv")  # Add this line
 
+    
     def put(self, command: str) -> bool:
         command = command.replace("put", "").replace(' ', '').split(",")
         command = [spec.replace("'", "") for spec in command]
-        # Find the table
+
+        # Extract the table name and check if it exists
         table = command.pop(0)
-        if self.table_exists(table) == False:
-            print(f"\n=> Hbase::Table - {table} does not exist.\n")
+        self.load_table(table)
+
+        if table not in self.tables:
             return False
 
-        df = pd.read_csv(f"./HbaseCollections/{table}.csv")
+        df = self.tables[table]
 
-        filter = f"'{command[0]}'"
+        id = command[0]
         column_subcol = command[1].split(":")
         value = command[2]
 
         if len(column_subcol) == 2:
-            # Check if the column exists
-            try:
-                df[column_subcol[0]]
-            except:
-                print(f'No column named {command[1]} in table {table}')
-                return False
-
-            try:
-                row_index = df[df[column_subcol[0]] == filter].index[0]
-                df.at[row_index, column_subcol[0]] = {
-                    filter: {column_subcol[1]: value}
-                }
-                # df.to_csv(f"./HbaseCollections/{table}.csv", index=False)
-                print(df)
-            except:
-                print(f'No row named {filter} in table {table}')
+            column = column_subcol[0]
+            subcol = column_subcol[1]
         else:
-            print("SyntaxError: invalid syntax")
+            print("SyntaxError: invalid syntax on", command[1])
+            return False
+
+        if id not in df['id'].values:
+            # Create a new row with the given id
+            new_row = {col: '' for col in df.columns}
+            new_row['id'] = id
+            new_row[column] = str({subcol: value})
+
+            # Append the new row to the DataFrame
+            df = df.append(new_row, ignore_index=True)
+        else:
+            # Update the existing row
+            row_index = df[df['id'] == id].index[0]
+            cell = df.loc[row_index, column]
+
+            if pd.isna(cell) or cell == '':
+                # Create a new dictionary if the cell is empty
+                df.loc[row_index, column] = str({subcol: value})
+            else:
+                # Update the dictionary if the cell already contains data
+                cell_dict = ast.literal_eval(cell)
+                cell_dict[subcol] = value
+                df.loc[row_index, column] = str(cell_dict)
+
+        # Save the updated DataFrame to the CSV file
+        df.to_csv(f"./HbaseCollections/{table}.csv", index=False)
+
+        return True
 
 
 def clear_screen():
@@ -520,19 +548,7 @@ def clear_screen():
 hbase = HbaseSimulator()
 clear_screen()
 # hbase.mainHBase()
-# hbase.mainHBase()
-# create 'empleado', 'nombre', 'ID', 'puesto'
-# command = input('command test> ')
-# hbase.create("create 'empleado', 'personal_data', 'geographic', 'contact'")
-# hbase.list_()
-# hbase.disable(command)
-# hbase.disable("disable 'empleado'")
-# hbase.scan("scan 'empleado'")
-# hbase.count('empleado') #contar la cantidad de filas de la tabla
-# hbase.count('empleado', 'nombre') #Busquedas que coinciden un parametro de busqueda
-# hbase.disable("disable 'empleado'")
-# hbase.scan("scan 'empleado'")
 
-# ALE : Delete all , drop all,  drop , Delete , count
+#                tabla       id    columna:subcolumna        valor
+hbase.put("put 'empleado', '100', 'personal_data:fullname', 'Jorge Caballeros'")
 
-hbase.put("put 'empleado', 'Jorge', 'nombre:fullname', 'Jorge Caballeros'")
