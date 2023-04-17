@@ -46,8 +46,35 @@ class HbaseSimulator:
 
     # -----------------------------hbase functions-----------------------------
 
-    def get(self):
-        pass
+    def get(self, command: str) -> bool:
+        command = command.replace("get", "")
+        commands = command.split(",")
+
+        if len(commands) != 2:
+            print(f"\n=> Hbase::get - Incorrect command format {command}\n")
+            return False
+
+        table_name = commands[0].replace(" ", "").replace("'", "")
+        row_key = commands[1].replace(" ", "").replace("'", "")
+
+        if not os.path.exists(f"./HbaseCollections/{table_name}.csv"):
+            print(f"\n=> Hbase::get - Table {table_name} does not exist.\n")
+        return False
+
+        with open(f"./HbaseCollections/{table_name}.csv", 'r') as file:
+            reader = csv.reader(file)
+            headers = next(reader)
+            for row in reader:
+                if row[0] == row_key:
+                    data = dict(zip(headers, row[1:]))
+                    print(f"\n=> Hbase::get - Row Key: {row_key}\n")
+                    for key, value in data.items():
+                        print(f"{key}: {value}")
+                    return True
+
+        print(
+            f"\n=> Hbase::get - Row Key {row_key} not found in table {table_name}\n")
+        return False
 
     def scan(self, command: str):
         command = command.replace("scan", "").replace(' ', '').split(",")
@@ -409,6 +436,9 @@ class HbaseSimulator:
                 elif 'put' == command.split(" ")[0]:
                     self.put(command)
 
+                elif 'get' == command.split(" ")[0]:
+                    self.get(command)
+
                 elif command != '':
                     print(f"ERROR: Unknown command '{command}'")
         elif initial != '':
@@ -464,3 +494,19 @@ def clear_screen():
 hbase = HbaseSimulator()
 clear_screen()
 hbase.mainHBase()
+# hbase.mainHBase()
+# create 'empleado', 'nombre', 'ID', 'puesto'
+# command = input('command test> ')
+# hbase.create(command)
+# hbase.list_()
+# hbase.disable(command)
+# hbase.disable("disable 'empleado'")
+# hbase.scan("scan 'empleado'")
+# hbase.count('empleado') #contar la cantidad de filas de la tabla
+# hbase.count('empleado', 'nombre') #Busquedas que coinciden un parametro de busqueda
+# hbase.disable("disable 'empleado'")
+# hbase.scan("scan 'empleado'")
+
+# ALE : Delete all , drop all,  drop , Delete , count
+
+# hbase.put("put 'empleado', 'Jorge', 'nombre:fullname', 'Jorge Caballeros'")
