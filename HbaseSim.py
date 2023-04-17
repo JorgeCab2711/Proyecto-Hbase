@@ -145,8 +145,27 @@ class HbaseSimulator:
                 return row_count
         
 
-    def truncate(self):
-        pass
+    def truncate(self, table_name: str) -> bool:
+        if table_name not in self.table_names:
+            print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
+            return False
+        
+        if self.check_string_in_file(table_name):
+            print(f"\n=> Hbase::Table - {table_name} is disabled.\n")
+            return False
+        
+        self.disable(f"disable '{table_name}'")
+        
+        #abrir el archivo de la tabla 
+        with open(f'./HbaseCollections/{table_name}.csv', 'r') as file:
+            writer = csv.writer(file)
+            headers = next(writer)
+            writer.writerow(headers)
+        print(f"\n=> Hbase::Table - {table_name} truncated.\n")
+        
+        self.disable(f"enable '{table_name}'")
+        return True
+
 
     def disable(self, command):
         # Setting the start time of the function
@@ -191,8 +210,6 @@ class HbaseSimulator:
 
         return True
 
-    def is_enabled(self):
-        pass
 
     def alter(self):
         pass
@@ -309,6 +326,7 @@ class HbaseSimulator:
         return True
 
     def mainHBase(self):
+        is_enabled = True
         counter = 0
         initial = input("\n[cloudera@quickstart ~]$ ")
         # time.sleep(2)
@@ -318,7 +336,7 @@ class HbaseSimulator:
                 f"{datetime.today().strftime('%Y-%m-%d')} \nINFO [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available\n Hbase shell enter 'help<RETURN>' for list of supported commands. Type 'exit<RETURN>' to leave the HBase Shell\n Version 1.4.13, rUnknown\n")
 
             command = ""
-            while command != "exit<RETURN>" or command != "exit":
+            while is_enabled and command != "exit<RETURN>" or command != "exit":
                 # User enters any command of the Hbase shell
                 command = input(f"hbase(main):00{counter}:0>")
                 counter += 1
@@ -382,6 +400,11 @@ class HbaseSimulator:
                     
                 elif 'deleteall' == command.split(" ")[0]:
                     self.delete_all(command)
+                
+                elif 'truncate' == command.split(" ")[0]:
+                    table_name = command.split(" ")[1].replace("'", "")
+                    self.truncate(table_name)
+                
 
                 elif command != '':
                     print(f"ERROR: Unknown command '{command}'")
