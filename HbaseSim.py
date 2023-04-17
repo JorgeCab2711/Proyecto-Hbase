@@ -195,6 +195,30 @@ class HbaseSimulator:
 
         self.disable(f"enable '{table_name}'")
         return True
+    
+    def enable(self, command):
+        command = command.replace("enable", "").replace(' ', '').split(",")
+        if len(command) < 1:
+            print(
+                f"\nValue error on: {command}\nToo many arguments for enable fuction.\nUsage: enable '<table_name>'\n"
+            )
+            return False
+        command = command[0].replace("'", "")
+        
+        direc = './HbaseCollections'
+        filename = f'{command}.csv'
+        filepath = os.path.join(direc, filename)
+        
+        if os.path.exists(filepath):
+            with open("./disabled_tables.txt", "r") as file:
+                lines = file.readlines()
+            with open("./disabled_tables.txt", "w") as file:
+                for line in lines:
+                    if line.strip("\n") != command:
+                        file.write(line)
+        else:
+            print(f"\n=> Hbase::Table - {command} does not exist.\n")
+            return False    
 
     def disable(self, command):
         # Setting the start time of the function
@@ -239,6 +263,8 @@ class HbaseSimulator:
         print(f"\n=> Hbase::Table - {command} disabled")
 
         return True
+    
+    
 
     def alter(self):
         pass
@@ -375,8 +401,7 @@ class HbaseSimulator:
 
                 # Version command
                 elif command == 'version':
-                    print(
-                        f'1.4.13, rUnknown, {datetime.today().strftime("%Y-%m-%d")}')
+                    print(f'1.4.13, rUnknown, {datetime.today().strftime("%Y-%m-%d")}')
 
                 # TODO table help command
                 elif command == 'table_help':
@@ -397,6 +422,9 @@ class HbaseSimulator:
                 # Disable table command
                 elif 'disable' == command.split(" ")[0]:
                     self.disable(command)
+                    
+                elif 'enable' == command.split(" ")[0]:
+                    self.enable(command)
 
                 elif 'scan' == command.split(" ")[0]:
                     self.scan(command)
