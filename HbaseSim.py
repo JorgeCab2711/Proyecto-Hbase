@@ -3,6 +3,8 @@ from datetime import datetime
 import pandas as pd
 import csv
 import os
+import random
+import numpy as np
 
 
 class HbaseSimulator:
@@ -294,6 +296,7 @@ class HbaseSimulator:
                 return False
 
         command = [spec.replace("'", "") for spec in command]
+        command.insert(0, 'id')
 
         # setting the meta data
         meta_data = {}
@@ -449,37 +452,52 @@ class HbaseSimulator:
     def put(self, command: str) -> bool:
         command = command.replace("put", "").replace(' ', '').split(",")
         command = [spec.replace("'", "") for spec in command]
-        # Find the table
+
+        # Extract the table name and check if it exists
         table = command.pop(0)
-        if self.table_exists(table) == False:
+        if not self.table_exists(table):
             print(f"\n=> Hbase::Table - {table} does not exist.\n")
             return False
 
         df = pd.read_csv(f"./HbaseCollections/{table}.csv")
 
-        filter = f"'{command[0]}'"
+        id = f"'{command[0]}'"
         column_subcol = command[1].split(":")
         value = command[2]
 
-        if len(column_subcol) == 2:
-            # Check if the column exists
-            try:
-                df[column_subcol[0]]
-            except:
-                print(f'No column named {command[1]} in table {table}')
-                return False
+        print(id)
+        print(column_subcol)
+        print(value)
+        print('\n')
 
-            try:
-                row_index = df[df[column_subcol[0]] == filter].index[0]
-                df.at[row_index, column_subcol[0]] = {
-                    filter: {column_subcol[1]: value}
-                }
-                # df.to_csv(f"./HbaseCollections/{table}.csv", index=False)
-                print(df)
-            except:
-                print(f'No row named {filter} in table {table}')
+        if len(column_subcol) != 2:
+            print("SyntaxError: invalid syntax on", command[1])
+            return False
+
+        # Check if ID exists in the 'id' column
+        if id in df['id'].values:
+            # Get the row index of the ID
+            row_index = df.index[df['id'] == id].tolist()[0]
+
+            # Update the value in the specified column:subcol with the new value
+            col = column_subcol[0]
+            subcol = column_subcol[1]
+            df.at[row_index, col] = df[col].apply(lambda x: {subcol: value} if isinstance(
+                x, dict) or x is np.nan else x.update({subcol: value}) or x)
+
         else:
-            print("SyntaxError: invalid syntax")
+            # Append the ID value to the 'id' column
+            df = df.append({'id': id}, ignore_index=True)
+
+            # Add the dictionary containing the new value to the specified column:subcol
+            col = column_subcol[0]
+            subcol = column_subcol[1]
+            df.at[df.index[df['id'] == id].tolist()[0], col] = {subcol: value}
+
+        # Save the updated DataFrame to the CSV file
+        df.to_csv(f"./HbaseCollections/{table}.csv", index=False)
+
+        return True
 
 
 def clear_screen():
@@ -493,7 +511,7 @@ hbase = HbaseSimulator()
 clear_screen()
 # hbase.mainHBase()
 # hbase.mainHBase()
-# create 'empleado', 'nombre', 'ID', 'puesto'
+# create 'empleado', 'personal_data', 'Adress', 'contact'
 # command = input('command test> ')
 # hbase.create("create 'empleado', 'personal_data', 'geographic', 'contact'")
 # hbase.list_()
@@ -507,4 +525,8 @@ clear_screen()
 
 # ALE : Delete all , drop all,  drop , Delete , count
 
-hbase.put("put 'empleado', 'Jorge', 'nombre:fullname', 'Jorge Caballeros'")
+
+#                tabla       id    columna:subcolumna        valor
+hbase.put("put 'empleado', '100', 'address:city', 'Guatemala'")
+
+# {'Jorge': {'fullname': 'Jorge Caballeros'}}

@@ -1,3 +1,2 @@
-personal_data,geographic,contact
-{'fullname':'Jorge Caballeros','ID':123},{'country':guate},{'phoneNum':'416471498'}
-
+id,personal_data,address,contact
+'100',{'name': 'Jorge'},,
