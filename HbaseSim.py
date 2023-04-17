@@ -491,6 +491,12 @@ class HbaseSimulator:
                 elif command == 'list':
                     self.list_()
 
+                elif 'alter' == command.split(" ")[0]:
+                    self.alter(command)
+
+                elif 'describe' == command.split(" ")[0]:
+                    self.describe(command)
+
                 # Disable table command
                 elif 'disable' == command.split(" ")[0]:
                     self.disable(command)
