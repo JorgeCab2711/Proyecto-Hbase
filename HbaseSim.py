@@ -268,8 +268,56 @@ class HbaseSimulator:
     
     
 
-    def alter(self):
-        pass
+    # Modifies a table
+    def alter(self, command: str) -> bool:
+        # Setting the start time of the function
+        start_time = time.time()
+        # Removing the alter command from the command and splitting the command
+        command = command.replace("alter", "").replace(' ', '').split(",")
+        if len(command) < 3:
+            print(
+                f"\nValue error on: {command}\nToo few arguments for alter fuction.\nUsage: alter '<table_name>', '<column_family_name>', '<column_family_action>'\n"
+            )
+            return False
+
+        # Getting the meta from the command
+        value = command[0].replace("'", "")
+        cf = command[1].replace("'", "")
+        action = command[2].replace("'", "")
+
+        # Checking if the table exists
+        if not os.path.exists(f"./HbaseCollections/{value}.csv"):
+            print(f"\n=> Hbase::Table - {value} does not exist.\n")
+            return False
+
+        # Updating the headers of the table
+        df = pd.read_csv(f"./HbaseCollections/{value}.csv")
+        if action == "add":
+            if cf not in df.columns:
+                df[cf] = ""
+                df.to_csv(f"./HbaseCollections/{value}.csv", index=False)
+                print(f"\n=> Hbase::Table - Added {cf} to {value}.\n")
+                return True
+            else:
+                print(f"\n=> Hbase::Table - {cf} already exists in {value}.\n")
+                return False
+        elif action == "delete":
+            if cf in df.columns:
+                df = df.drop(columns=[cf])
+                # df.drop(columns=[cf], inplace=True)
+                df.to_csv(f"./HbaseCollections/{value}.csv", index=False)
+                print(f"\n=> Hbase::Table - Deleted {cf} from {value}.\n")
+                return True
+            else:
+                print(f"\n=> Hbase::Table - {cf} does not exist in {value}.\n")
+                return False
+        else:
+            print(
+                f"\nValue error on: {command}\nUnknown command for alter fuction.\nUsage: alter '<table_name>', '<column_family_name>', 'add/delete'\n"
+            )
+            return False
+
+
 
     def drop(self, table_name: str) -> bool:
 
@@ -289,8 +337,29 @@ class HbaseSimulator:
             print("\n=> Hbase::All tables dropped\n")
             return True
 
-    def describe(self):
-        pass
+    # Describes a table
+    def describe(self, command: str) -> bool:
+        # Setting the start time of the function
+        start_time = time.time()
+        # Removing the describe command from the command and splitting the command
+        command = command.replace("describe", "").replace(' ', '').replace("'", "")
+        # Checking if the table exists
+        if not os.path.exists(f"./HbaseCollections/{command}.csv"):
+            print(f"\n=> Hbase::Table - {command} does not exist.\n")
+            return False
+
+        # Getting the headers of the table
+        df = pd.read_csv(f"./HbaseCollections/{command}.csv")
+        headers = df.columns.tolist()
+        # Printing the results
+        print(f"\nTable {command}")
+        print(f"{len(headers)} column(s)")
+        for header in headers:
+            print(header)
+        # Setting the end time of the function
+        end_time = time.time()
+        print(f"\n=> Hbase::Table - {command} described in {round(end_time - start_time, 4)} seconds\n")
+        return True
 
     # Creates a table
     def create(self, command: str) -> bool:
