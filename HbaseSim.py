@@ -87,11 +87,35 @@ class HbaseSimulator:
 
         return True
 
-    def delete(self):
-        pass
+    def delete(self, command: str) -> bool:
+        command = command.replace("delete", "")
+        commands = command.split(",")
+        if len(commands) == 3:
+            table_name = commands[0].replace(" ", "").replace("'", "")
+            column_name = commands[1].replace(" ", "").replace("'", "")
+            timestamp = commands[2].replace(" ", "").replace("'", "")
+            found = False
+            with open(f'./HbaseCollections/{table_name}.csv', 'r') as file:
+                reader = csv.reader(file)
+                rows = list(reader)
+                for row in rows:
+                    if len(row) > 0 and row[0] == column_name:
+                        found = True
+                        row[-1] = timestamp
+                        break
+                if not found:
+                    print(f"\n=> Hbase::delete - Row ({column_name}) not found in table {table_name}\n")
 
-    def deleteAll(self):
-        pass
+            with open(f'./HbaseCollections/{table_name}.csv', 'w+') as file:
+                writer = csv.writer(file)
+                writer.writerows(rows)
+            print(f"\n=> Hbase::delete - ({column_name}) deleted in {table_name} at {timestamp}\n")
+            return True
+
+        else:
+            print(f"\n=> Hbase::delete - Incorrect command format {command}\n")
+
+        return False
 
     def count(self, table_name: str, search_param: str = None) -> int:
         # Verificar si la tabla existe
@@ -336,6 +360,9 @@ class HbaseSimulator:
                     
                 elif command == 'drop_all':
                     hbase.drop_all()
+                    
+                elif command == command.split(" ")[0]:
+                    self.delete(command)
 
                 elif command != '':
                     print(f"ERROR: Unknown command '{command}'")
