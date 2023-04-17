@@ -291,6 +291,22 @@ class HbaseSimulator:
         for file in files:
             if os.path.isfile(os.path.join("./HbaseCollections", file)):
                 print(file.replace(".csv", ""))
+    
+    def delete_all(self, command: str) -> bool:
+        table_name = command.split(" ")[1].replace("'", "")
+        if table_name not in self.table_names:
+            print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
+            return False
+        # Deshabilitar la tabla
+        self.disable(f"disable '{table_name}'")
+        total_rows = self.count_rows(table_name)
+        # Borrar el archivo .csv de la tabla
+        os.remove(f"./HbaseCollections/{table_name}.csv")
+        # Volver a habilitar la tabla
+        self.disable(f"enable '{table_name}'")
+        # Imprimir filas eliminadas
+        print(f"\n=> Hbase::Table - {table_name} deleted {total_rows} rows.\n")
+        return True
 
     def mainHBase(self):
         counter = 0
@@ -358,11 +374,14 @@ class HbaseSimulator:
                     table_name = command.split(" ")[1].replace("'", "")
                     hbase.drop(table_name)
                     
-                elif command == 'drop_all':
+                elif 'drop_all' == command.split(" ")[0]:
                     hbase.drop_all()
                     
-                elif command == command.split(" ")[0]:
+                elif 'delete' == command.split(" ")[0]:
                     self.delete(command)
+                    
+                elif 'deleteall' == command.split(" ")[0]:
+                    self.delete_all(command)
 
                 elif command != '':
                     print(f"ERROR: Unknown command '{command}'")
