@@ -1,3 +1,4 @@
 nombre,ID,puesto
-'Jorge', '100', 'Genrente'
-
+"{""'Jorge'"": {'fullname': 'JorgeCaballeros'}}", '100', 'Genrente'
+'Cami', '101', 'Jefa'
+'Ale', '102', 'Genrente'

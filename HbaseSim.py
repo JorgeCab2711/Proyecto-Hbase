@@ -10,7 +10,6 @@ class HbaseSimulator:
         self.IP = "198.167.0.1"
         self.tables = {}
         self.table_names = self.get_tables()
-
     # -----------------------------helper functions-----------------------------
 
     # Function to get all the tables in the HbaseCollections folder
@@ -40,10 +39,12 @@ class HbaseSimulator:
                     return True
         return False
 
-    # -----------------------------hbase functions-----------------------------
+    def table_exists(self, table_name: str) -> bool:
+        if table_name in self.table_names:
+            return True
+        return False
 
-    def put(self):
-        pass
+    # -----------------------------hbase functions-----------------------------
 
     def get(self):
         pass
@@ -193,7 +194,8 @@ class HbaseSimulator:
         # Checking if the table exists
         if os.path.exists(file_path):
             # Write the name of the table on the disabled tables txt file
-            with open("./disabledTables.txt", 'w') as file:
+            with open("./disabledTables.txt", 'a+') as file:
+                file.seek(0)
                 file_contents = file.read()
                 if command not in file_contents:
                     file.write(command)
@@ -411,6 +413,47 @@ class HbaseSimulator:
         elif initial != '':
             print(f"ERROR: Unknown command '{initial}'")
 
+    # Adds or updates data in a specified row of a table
+
+    def put(self, command: str) -> bool:
+        command = command.replace("put", "").replace(' ', '').split(",")
+        command = [spec.replace("'", "") for spec in command]
+        # Find the table
+        table = command.pop(0)
+        if self.table_exists(table) == False:
+            print(f"\n=> Hbase::Table - {table} does not exist.\n")
+            return False
+
+        df = pd.read_csv(f"./HbaseCollections/{table}.csv")
+
+        filter = f"'{command[0]}'"
+        # TODO check if user tries to add data to a row or tries to make a new row
+        column_subcol = command[1].split(":")
+        value = command[2]
+
+        # Check the syntax of the command
+        if column_subcol == False:
+            print(
+                f"Syntax Error on {command[1]}\nCommand usage: put 'table_name','column_name:subcol_name','value'\n")
+            return False
+
+        # Check if the column exists
+        try:
+            df[column_subcol[0]]
+        except:
+            print(f'No column named {command[1]} in table {table}')
+
+        try:
+            row_index = df[df[column_subcol[0]] == filter].index[0]
+            df.at[row_index, column_subcol[0]] = {
+                        filter: {column_subcol[1]: value}
+                    }
+            df.to_csv(f"./HbaseCollections/{table}.csv", index=False)
+        except:
+            print(f'No row named {filter} in table {table}')
+        
+        
+
 
 def clear_screen():
     if os.name == 'nt':
@@ -422,13 +465,21 @@ def clear_screen():
 hbase = HbaseSimulator()
 clear_screen()
 # hbase.mainHBase()
-
 # create 'empleado', 'nombre', 'ID', 'puesto'
 # command = input('command test> ')
 # hbase.create(command)
 # hbase.list_()
 # hbase.disable(command)
+<<<<<<< Updated upstream
 #hbase.disable("disable 'empleado'")
 #hbase.scan("scan 'empleado'")
 #hbase.count('empleado') #contar la cantidad de filas de la tabla
 #hbase.count('empleado', 'nombre') #Busquedas que coinciden un parametro de busqueda
+=======
+# hbase.disable("disable 'empleado'")
+# hbase.scan("scan 'empleado'")
+
+# ALE : Delete all , drop all,  drop , Delete , count
+
+hbase.put("put 'empleado', 'Jorge', 'nombre:fullname', 'Jorge Caballeros'")
+>>>>>>> Stashed changes
