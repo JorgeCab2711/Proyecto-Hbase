@@ -1,4 +1,3 @@
-nombre,ID,puesto
-"{""'Jorge'"": {'fullname': 'JorgeCaballeros'}}", '100', 'Genrente'
-'Cami', '101', 'Jefa'
-'Ale', '102', 'Genrente'
+personal_data,geographic,contact
+{'fullname':'Jorge Caballeros','ID':123},{'country':guate},{'phoneNum':'416471498'}
+

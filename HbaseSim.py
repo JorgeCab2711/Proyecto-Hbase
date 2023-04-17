@@ -59,7 +59,7 @@ class HbaseSimulator:
 
         if not os.path.exists(f"./HbaseCollections/{table_name}.csv"):
             print(f"\n=> Hbase::get - Table {table_name} does not exist.\n")
-        return False
+            return False
 
         with open(f"./HbaseCollections/{table_name}.csv", 'r') as file:
             reader = csv.reader(file)
@@ -278,7 +278,7 @@ class HbaseSimulator:
         # Getting the meta from the command
         value = command[0].replace("'", "")
         timestamp = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-        rowKey = len(self.tables) + 1
+        rowKey = len(self.table_names) + 1
 
         # checking if the table already exists
         if value in self.table_names:
@@ -458,30 +458,28 @@ class HbaseSimulator:
         df = pd.read_csv(f"./HbaseCollections/{table}.csv")
 
         filter = f"'{command[0]}'"
-        # TODO check if user tries to add data to a row or tries to make a new row
         column_subcol = command[1].split(":")
         value = command[2]
 
-        # Check the syntax of the command
-        if column_subcol == False:
-            print(
-                f"Syntax Error on {command[1]}\nCommand usage: put 'table_name','column_name:subcol_name','value'\n")
-            return False
+        if len(column_subcol) == 2:
+            # Check if the column exists
+            try:
+                df[column_subcol[0]]
+            except:
+                print(f'No column named {command[1]} in table {table}')
+                return False
 
-        # Check if the column exists
-        try:
-            df[column_subcol[0]]
-        except:
-            print(f'No column named {command[1]} in table {table}')
-
-        try:
-            row_index = df[df[column_subcol[0]] == filter].index[0]
-            df.at[row_index, column_subcol[0]] = {
-                filter: {column_subcol[1]: value}
-            }
-            df.to_csv(f"./HbaseCollections/{table}.csv", index=False)
-        except:
-            print(f'No row named {filter} in table {table}')
+            try:
+                row_index = df[df[column_subcol[0]] == filter].index[0]
+                df.at[row_index, column_subcol[0]] = {
+                    filter: {column_subcol[1]: value}
+                }
+                # df.to_csv(f"./HbaseCollections/{table}.csv", index=False)
+                print(df)
+            except:
+                print(f'No row named {filter} in table {table}')
+        else:
+            print("SyntaxError: invalid syntax")
 
 
 def clear_screen():
@@ -493,11 +491,11 @@ def clear_screen():
 
 hbase = HbaseSimulator()
 clear_screen()
-hbase.mainHBase()
+# hbase.mainHBase()
 # hbase.mainHBase()
 # create 'empleado', 'nombre', 'ID', 'puesto'
 # command = input('command test> ')
-# hbase.create(command)
+# hbase.create("create 'empleado', 'personal_data', 'geographic', 'contact'")
 # hbase.list_()
 # hbase.disable(command)
 # hbase.disable("disable 'empleado'")
@@ -509,4 +507,4 @@ hbase.mainHBase()
 
 # ALE : Delete all , drop all,  drop , Delete , count
 
-# hbase.put("put 'empleado', 'Jorge', 'nombre:fullname', 'Jorge Caballeros'")
+hbase.put("put 'empleado', 'Jorge', 'nombre:fullname', 'Jorge Caballeros'")
