@@ -180,27 +180,8 @@ class HbaseSimulator:
                     f"\n=> Hbase::Table - {table_name} has {row_count} rows that match the search parameter '{search_param}'.\n")
                 return row_count
 
-    def truncate(self, table_name: str) -> bool:
-        if table_name not in self.table_names:
-            print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
-            return False
-
-        if self.check_string_in_file(table_name):
-            print(f"\n=> Hbase::Table - {table_name} is disabled.\n")
-            return False
-
-        self.disable(f"disable '{table_name}'")
-
-        # abrir el archivo de la tabla
-        with open(f'./HbaseCollections/{table_name}.json', 'r') as file:
-            writer = csv.writer(file)
-            headers = next(writer)
-            writer.writerow(headers)
-        print(f"\n=> Hbase::Table - {table_name} truncated.\n")
-
-        self.disable(f"enable '{table_name}'")
-        return True
-
+ 
+        
     def disable(self, command):
         # Setting the start time of the function
         start = time.time()
@@ -244,6 +225,9 @@ class HbaseSimulator:
         print(f"\n=> Hbase::Table - {command} disabled")
 
         return True
+        
+        
+       
 
     # Modifies a table
     def alter(self, command: str) -> bool:
@@ -522,6 +506,19 @@ class HbaseSimulator:
 
         print(f"\n=> Hbase::Table - {table_name} - Inserted {len(data)} rows.\n")
         return True
+    
+    def truncate(self, table_name: str) -> bool:
+        # Verificar si la tabla existe
+        if table_name not in self.table_names:
+            print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
+            return False
+
+        # Vaciar el archivo JSON de la tabla
+        with open(f"./HbaseCollections/{table_name}.json", 'w') as file:
+            file.write('{"headers":[],"rows":{}}')
+
+        print(f"\n=> Hbase::Table - {table_name} truncated.\n")
+        return True
 
 
     def update_many(self, command: str) -> bool:
@@ -731,8 +728,8 @@ def clear_screen():
 
 hbase = HbaseSimulator()
 clear_screen()
-# hbase.mainHBase()
+hbase.mainHBase()
 
 # hbase.create("create 'empleado', 'personal_data', 'empresa'")
 
-hbase.scan("scan 'empleado'")
+#hbase.scan("scan 'empleado'")
