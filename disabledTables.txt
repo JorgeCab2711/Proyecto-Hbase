@@ -1,7 +1,4 @@
 prueba
 pruebita
-<<<<<<< Updated upstream
 empleado
-=======
 car
->>>>>>> Stashed changes

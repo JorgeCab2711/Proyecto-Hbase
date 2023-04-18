@@ -179,10 +179,8 @@ class HbaseSimulator:
                     f"\n=> Hbase::Table - {table_name} has {row_count} rows that match the search parameter '{search_param}'.\n")
                 return row_count
 
-<<<<<<< Updated upstream
  
         
-=======
     def truncate(self, table_name: str) -> bool:
         if table_name not in self.table_names:
             print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
@@ -204,7 +202,6 @@ class HbaseSimulator:
         self.disable(f"enable '{table_name}'")
         return True
 
->>>>>>> Stashed changes
     def disable(self, command):
         # Setting the start time of the function
         start = time.time()
@@ -693,8 +690,6 @@ class HbaseSimulator:
         
         print(command)
                     
-            
-            
         return True
     
 def clear_screen():
@@ -706,7 +701,7 @@ def clear_screen():
 
 hbase = HbaseSimulator()
 clear_screen()
-hbase.mainHBase()
+# hbase.mainHBase()
 
 # hbase.create("create 'car', 'brand', 'year', 'color'")
 
@@ -717,12 +712,9 @@ hbase.mainHBase()
 
 # hbase.alter("alter 'car', 'name', 'delete', 'caca'")
 
-# hbase.disable("disable 'car'")
+hbase.disable("enable 'car'")
 
-hbase.put("put 'car', '1', 'specs:HP', '100'")
+# hbase.put("put 'car', '1', 'specs:HP', '100'")
 
 
-<<<<<<< Updated upstream
 #hbase.scan("scan 'empleado'")
-=======
->>>>>>> Stashed changes
