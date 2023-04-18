@@ -48,7 +48,7 @@ class HbaseSimulator:
     # -----------------------------hbase functions-----------------------------
 
     def get(self, command: str) -> bool:
-        command = command.replace("get", "")
+        command = command.replace("get", "").replace("'", "")
         commands = command.split(",")
 
         if len(commands) != 2:
@@ -179,8 +179,11 @@ class HbaseSimulator:
                     f"\n=> Hbase::Table - {table_name} has {row_count} rows that match the search parameter '{search_param}'.\n")
                 return row_count
 
+<<<<<<< Updated upstream
  
         
+=======
+>>>>>>> Stashed changes
     def truncate(self, table_name: str) -> bool:
         if table_name not in self.table_names:
             print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
@@ -246,9 +249,6 @@ class HbaseSimulator:
 
         return True
         
-        
-       
-
     # Modifies a table
     def alter(self, command: str) -> bool:
         # Setting the start time of the function
@@ -593,8 +593,8 @@ class HbaseSimulator:
             print(
                 f"{datetime.today().strftime('%Y-%m-%d')} \nINFO [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available\n Hbase shell enter 'help<RETURN>' for list of supported commands. Type 'exit<RETURN>' to leave the HBase Shell\n Version 1.4.13, rUnknown\n")
 
-            command = ""
-            while is_enabled and command != "exit<RETURN>" or command != "exit":
+            
+            while is_enabled:
                 # User enters any command of the Hbase shell
                 command = input(f"hbase(main):00{counter}:0>")
                 counter += 1
@@ -607,7 +607,7 @@ class HbaseSimulator:
                 # Version command
                 elif command == 'version':
                     print(
-                        f'1.4.13, rUnknown, {datetime.today().strftime("%Y-%m-%d")}')
+                        f'1.4.13, rJAA, {datetime.today().strftime("%Y-%m-%d")} ')
 
                 # TODO table help command
                 elif command == 'table_help':
@@ -679,19 +679,75 @@ class HbaseSimulator:
                 elif 'get' == command.split(" ")[0]:
                     self.get(command)
 
-                elif command != '':
+                elif command == "exit<RETURN>" or command == "exit":
+                    is_enabled = False
+                
+                elif command == '':
+                    pass
+                else:
                     print(f"ERROR: Unknown command '{command}'")
+                    
+                
         elif initial != '':
             print(f"ERROR: Unknown command '{initial}'")
 
     def put(self, command: str) -> bool:
         command = command.replace("put", "").replace(' ', '').replace("'","").split(",")
         command = [spec.replace("'", "") for spec in command]
+
+        if len(command) != 4:
+            print("ERROR: Wrong number of arguments")
+            print("Usage: put '<table_name>', '<row_id>', '<column:subcolumn>', '<value>'")
+            return False
+
+        table_name = command[0]
+        row_id = command[1]
+        col_subcol = command[2].split(":")
+        new_value = command[3]
+
+        # load the JSON data
+        with open(f'./HbaseCollections/{table_name}.json') as f:
+            data = json.load(f)
+
+        print(data)
         
+<<<<<<< Updated upstream
         print(command)
                     
+=======
+        if col_subcol[0] not in data['headers']:
+            print(f'Column name {col_subcol[0]} not found in headers.')
+            return False        
+        try:
+            row = data['rows'][row_id]
+            column = col_subcol[0]
+
+            # update the column and subcolumn
+            if column in data['headers'] and column in row:
+                subcolumn = col_subcol[1]
+                row[column][subcolumn] = new_value
+            else:
+                print(f'Column {column} added')
+                data['headers'].append(column)
+                row[column] = {col_subcol[1]: new_value}
+        except KeyError:
+            # create a new row with the specified column and subcolumn
+            if col_subcol[0] in data['headers']:
+                data['rows'][row_id] = {col_subcol[0]: {col_subcol[1]: new_value}}
+            else:
+                print(f'Column name {col_subcol[0]} not found in headers.')
+                return False
+                
+            
+
+        # save the updated JSON data to file
+        with open(f'./HbaseCollections/{table_name}.json', 'w') as f:
+            json.dump(data, f)
+
+        print(data)
+>>>>>>> Stashed changes
         return True
-    
+
 def clear_screen():
     if os.name == 'nt':
         os.system('cls')
@@ -703,6 +759,7 @@ hbase = HbaseSimulator()
 clear_screen()
 # hbase.mainHBase()
 
+<<<<<<< Updated upstream
 # hbase.create("create 'car', 'brand', 'year', 'color'")
 
 # hbase.scan("scan 'empleado'")
@@ -718,3 +775,5 @@ hbase.disable("enable 'car'")
 
 
 #hbase.scan("scan 'empleado'")
+=======
+>>>>>>> Stashed changes

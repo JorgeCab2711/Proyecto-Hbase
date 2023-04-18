@@ -1,15 +1,1 @@
-{
-    "headers": [
-        "specs",
-        "year",
-        "color"
-    ],
-    "rows": {
-        "1": {
-            "specs": {
-                "HP": "200",
-                "Torque": "250"
-            }
-        }
-    }
-}
+{"headers": ["model", "specs", "release_date", "color", "release_date"], "rows": {"1": {"model": {"name": "GT86"}, "specs": {"HP": "200", "Torque": "250"}, "release_date": {"month": "11"}}, "2": {"specs": {"HP": "200", "engineCM": "2000"}}}}
