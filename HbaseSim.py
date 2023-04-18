@@ -79,7 +79,6 @@ class HbaseSimulator:
 
         return True
 
-
     def scan(self, command: str):
         command = command.replace("scan", "").replace(' ', '').split(",")
 
@@ -180,8 +179,32 @@ class HbaseSimulator:
                     f"\n=> Hbase::Table - {table_name} has {row_count} rows that match the search parameter '{search_param}'.\n")
                 return row_count
 
+<<<<<<< Updated upstream
  
         
+=======
+    def truncate(self, table_name: str) -> bool:
+        if table_name not in self.table_names:
+            print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
+            return False
+
+        if self.check_string_in_file(table_name):
+            print(f"\n=> Hbase::Table - {table_name} is disabled.\n")
+            return False
+
+        self.disable(f"disable '{table_name}'")
+
+        # abrir el archivo de la tabla
+        with open(f'./HbaseCollections/{table_name}.json', 'r') as file:
+            data = json.load(file)
+            headers = data['headers']
+            
+        print(f"\n=> Hbase::Table - {table_name} truncated.\n")
+
+        self.disable(f"enable '{table_name}'")
+        return True
+
+>>>>>>> Stashed changes
     def disable(self, command):
         # Setting the start time of the function
         start = time.time()
@@ -235,9 +258,15 @@ class HbaseSimulator:
         start_time = time.time()
         # Removing the alter command from the command and splitting the command
         command = command.replace("alter", "").replace(' ', '').split(",")
-        if len(command) < 3:
+        
+        if len(command) < 3 :
             print(
                 f"\nValue error on: {command}\nToo few arguments for alter fuction.\nUsage: alter '<table_name>', '<column_family_name>', '<column_family_action>'\n"
+            )
+            return False
+        elif len(command) > 3 :
+            print(
+                f"\nValue error on: {command}\nToo many arguments for alter fuction.\nUsage: alter '<table_name>', '<column_family_name>', '<column_family_action>'\n"
             )
             return False
 
@@ -264,6 +293,7 @@ class HbaseSimulator:
                     json.dump(data, file, indent=4)
                     file.truncate()
                     print(f"\n=> Hbase::Table - Added {cf} to {value}.\n")
+                    print('Finished in ', time.time() - start_time, 'seconds')
                     return True
                 else:
                     print(f"\n=> Hbase::Table - {cf} already exists in {value}.\n")
@@ -278,18 +308,20 @@ class HbaseSimulator:
                     json.dump(data, file, indent=4)
                     file.truncate()
                     print(f"\n=> Hbase::Table - Deleted {cf} from {value}.\n")
+                    print('Finished in ', time.time() - start_time, 'seconds')
                     return True
                 else:
                     print(f"\n=> Hbase::Table - {cf} does not exist in {value}.\n")
                     return False
+            
+            
 
             else:
                 print(
                     f"\nValue error on: {command}\nUnknown command for alter fuction.\nUsage: alter '<table_name>', '<column_family_name>', 'add/delete'\n"
                 )
                 return False
-            
-
+        
     def drop(self, table_name: str) -> bool:
         # Verificar si la tabla existe
         if table_name not in self.table_names:
@@ -355,7 +387,6 @@ class HbaseSimulator:
             with open(f"./HbaseCollections/{table}.json", "r") as f:
                 self.tables[table] = json.load(f)
         return True
-
 
     # Creates a table
     def create(self, command: str) -> bool:
@@ -520,7 +551,6 @@ class HbaseSimulator:
         print(f"\n=> Hbase::Table - {table_name} truncated.\n")
         return True
 
-
     def update_many(self, command: str) -> bool:
         command = command.replace("update_many", "").replace(' ', '').split(",")
         command = [spec.replace("'", "") for spec in command]
@@ -555,7 +585,6 @@ class HbaseSimulator:
                 
         df.to_csv(f'./HbaseCollections/{table}.csv', index=False)
         return True
-
 
     def mainHBase(self):
         is_enabled = True
@@ -631,7 +660,7 @@ class HbaseSimulator:
                 # Drop table command
                 elif 'drop' == command.split(" ")[0]:
                     table_name = command.split(" ")[1].replace("'", "")
-                    hbase.drop(table_name)
+                    
 
                 elif 'drop_all' == command.split(" ")[0]:
                     hbase.drop_all()
@@ -645,6 +674,7 @@ class HbaseSimulator:
                 elif 'truncate' == command.split(" ")[0]:
                     table_name = command.split(" ")[1].replace("'", "")
                     self.truncate(table_name)
+                    self.drop(table_name)
 
                 elif 'put' == command.split(" ")[0]:
                     self.put(command)
@@ -657,63 +687,11 @@ class HbaseSimulator:
         elif initial != '':
             print(f"ERROR: Unknown command '{initial}'")
 
-    
-
     def put(self, command: str) -> bool:
-        command = command.replace("put", "").replace(' ', '').split(",")
+        command = command.replace("put", "").replace(' ', '').replace("'","").split(",")
         command = [spec.replace("'", "") for spec in command]
-
-        # Extract the table name and check if it exists
-        table = command.pop(0)
-        self.load_table(table)
-
-        if table not in self.tables:
-            return False
-
-        df = pd.read_csv(f'./HbaseCollections/{table}.csv')
-
-        id = command[0]
-        column_subcol = command[1].split(":")
-        value = command[2]
         
-        print(id)
-        print(column_subcol)
-        print(value)
-        print("\n")
-        
-        ids = [str(id) for id in df['id'].values]
-
-        # Check if the id is in the table, if not, create a new row, if it is, update the row
-        if id not in ids:
-            print("id not in df")    
-            new_row = {'id':id,f'{column_subcol[0]}':pd.DataFrame({f'{column_subcol[1]}':[str(value)]})}
-            new_row_df = pd.DataFrame.from_dict(new_row, orient='index').T
-            df = pd.concat([df, new_row_df], ignore_index=True)
-            df.to_csv(f'./HbaseCollections/{table}.csv', index=False)
-        else:
-            print("id in df")
-            # Read the CSV file into a dataframe
-            df = pd.read_csv(f'./HbaseCollections/{table}.csv', dtype={'id': str})
-
-            # Extract the row with ID = 100
-            row = df[df['id'] == id]
-
-            # Extract the nested dataframe from the 'personal_data' column
-            row_str = str(row[column_subcol[0]].iloc[0]).strip()
-            sub_col = pd.read_csv(StringIO(row_str))
-
-            # If the sub col exists uptade value, else create it
-            if column_subcol[1] in sub_col.columns:
-                print(column_subcol[1],'exists')
-                print('Value updated\n')
-                sub_col.loc[0, column_subcol[1]] = str(value)
-                df.loc[df['id'] == id, column_subcol[0]] = sub_col.to_csv(index=False)
-                df.to_csv(f'./HbaseCollections/{table}.csv', index=False)
-                
-            else:
-                print(column_subcol[1],'does not exist')
-                new_val = pd.DataFrame.from_dict({f'{column_subcol[1]}':[str(value)]})
-                print(new_val)
+        print(command)
                     
             
             
@@ -730,6 +708,21 @@ hbase = HbaseSimulator()
 clear_screen()
 hbase.mainHBase()
 
-# hbase.create("create 'empleado', 'personal_data', 'empresa'")
+# hbase.create("create 'car', 'brand', 'year', 'color'")
 
+# hbase.scan("scan 'empleado'")
+
+# hbase.delete("delete 'car', '1', 'specs:HP'")
+
+
+# hbase.alter("alter 'car', 'name', 'delete', 'caca'")
+
+# hbase.disable("disable 'car'")
+
+hbase.put("put 'car', '1', 'specs:HP', '100'")
+
+
+<<<<<<< Updated upstream
 #hbase.scan("scan 'empleado'")
+=======
+>>>>>>> Stashed changes

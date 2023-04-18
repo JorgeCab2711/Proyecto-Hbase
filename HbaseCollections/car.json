@@ -1,0 +1,15 @@
+{
+    "headers": [
+        "specs",
+        "year",
+        "color"
+    ],
+    "rows": {
+        "1": {
+            "specs": {
+                "HP": "200",
+                "Torque": "250"
+            }
+        }
+    }
+}
