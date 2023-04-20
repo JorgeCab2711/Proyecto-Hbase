@@ -1,0 +1,46 @@
+{
+    "headers": [
+        "model",
+        "specs",
+        "release_date"
+    ],
+    "rows": {
+        "3": {
+            "specs": {
+                "engine": "1500",
+                "HP": "100",
+                "Torque": "100"
+            },
+            "model": {
+                "name": "Civic"
+            },
+            "isNew": ""
+        },
+        "4": {
+            "specs": {
+                "HP": "250",
+                "engine": "2500",
+                "Torque": "331"
+            },
+            "model": {
+                "name": "Supra",
+                "RE": "True",
+                "Company": "Toyota"
+            },
+            "isNew": ""
+        },
+        "5": {
+            "specs": {
+                "HP": "500",
+                "engine": "3000",
+                "Torque": "531"
+            },
+            "model": {
+                "name": "GTR35",
+                "RE": "True",
+                "Company": "Nissan"
+            },
+            "isNew": ""
+        }
+    }
+}

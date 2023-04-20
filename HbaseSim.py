@@ -2,9 +2,6 @@ import time
 from datetime import datetime
 import pandas as pd
 import os
-import random
-import numpy as np
-import ast
 from io import StringIO
 import json
 
@@ -15,7 +12,6 @@ class HbaseSimulator:
         self.tables = {}
         self.table_names = self.get_tables()
     # -----------------------------helper functions-----------------------------
-
     # Function to get all the tables in the HbaseCollections folder
     def get_tables(self):
         directory = "./HbaseCollections"
@@ -45,8 +41,38 @@ class HbaseSimulator:
             return True
         return False
 
-    # -----------------------------hbase functions-----------------------------
 
+    def format_nested_json(self, json_data):
+        # Define a function to format each row of data
+        def format_row(row_id, data):
+            row_key = row_id
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            columns = []
+            values = []
+            for header in json_data['headers']:
+                if header in data[row_id]:
+                    if isinstance(data[row_id][header], dict):
+                        sub_columns = []
+                        for sub_col in data[row_id][header]:
+                            sub_columns.append(sub_col)
+                        columns.append(header + ':' + ','.join(sub_columns))
+                        values.append(','.join([str(v) for v in data[row_id][header].values()]))
+                    else:
+                        columns.append(header)
+                        values.append(data[row_id][header])
+            print(f'"{row_key:^8}" | "{timestamp:^23}" | {" ,".join(columns):<45} | {{{" ,".join(values)[:50]:<50}}}')
+
+        # Print the table header
+        print(f'{"Row key":^8} | {"TimeStamp":^23} | {"Columns:Subcols":^45} | {"Value":^50}')
+        print('-' * 120)
+
+        # Print the data rows
+        for row_id in json_data['rows']:
+            format_row(row_id, json_data['rows'])
+
+
+
+    # -----------------------------hbase functions-----------------------------
     def get(self, command: str) -> bool:
         command = command.replace("get", "").replace("'", "")
         commands = command.split(",")
@@ -65,7 +91,6 @@ class HbaseSimulator:
         with open(f"./HbaseCollections/{table_name}.json", 'r') as file:
             data = json.load(file)
 
-        headers = data["headers"]
         rows = data["rows"]
         if row_key not in rows:
             print(f"\n=> Hbase::get - Row Key {row_key} not found in table {table_name}\n")
@@ -73,45 +98,8 @@ class HbaseSimulator:
 
         row_data = rows[row_key]
         print(f"\n=> Hbase::get - Row Key: {row_key}\n")
-        for header in headers:
-            value = row_data[header]
-            print(f"{header}: {value}")
+        print(f"{row_key}: {row_data}")
 
-        return True
-
-    def scan(self, command: str):
-        command = command.replace("scan", "").replace(' ', '').split(",")
-
-        # Checking the command syntax
-        if len(command) != 1:
-            print(
-                f"\nValue error on: {command}\nToo many arguments for scan function.\nUsage: scan '<table_name>'\n"
-            )
-            return False
-
-        command = command[0].replace("'", "")
-        # Checking if the table exists
-        if command not in self.table_names:
-            print(f"\n=> Hbase::Table - {command} does not exist.\n")
-            return False
-
-        # checking if the table is disabled
-        if self.check_string_in_file(command):
-            print(f"\n=> Hbase::Table - {command} is disabled.\n")
-            return False
-
-        with open(f'./HbaseCollections/{command}.json', 'r') as file:
-            data = json.load(file)
-        
-        headers_dict = data['headers']
-        rows_dict = data['rows']
-        
-        df = pd.DataFrame.from_dict(rows_dict, orient='index')
-        
-        print('row key ,',str(headers_dict).replace("[",'').replace("]",'').replace("'",''))
-        for element in df:
-            element
-        
         return True
 
     def delete(self, command: str) -> bool:
@@ -158,6 +146,11 @@ class HbaseSimulator:
         if table_name not in self.table_names:
             print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
             return False
+        
+        # checking if the table is disabled
+        if self.check_string_in_file(table_name):
+            print(f"\n=> Hbase::Table - {table_name} is disabled.\n")
+            return False
 
         with open(f'./HbaseCollections/{table_name}.json', 'r') as file:
             data = json.load(file)
@@ -179,11 +172,6 @@ class HbaseSimulator:
                     f"\n=> Hbase::Table - {table_name} has {row_count} rows that match the search parameter '{search_param}'.\n")
                 return row_count
 
-<<<<<<< Updated upstream
- 
-        
-=======
->>>>>>> Stashed changes
     def truncate(self, table_name: str) -> bool:
         if table_name not in self.table_names:
             print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
@@ -248,7 +236,7 @@ class HbaseSimulator:
         print(f"\n=> Hbase::Table - {command} disabled")
 
         return True
-        
+       
     # Modifies a table
     def alter(self, command: str) -> bool:
         # Setting the start time of the function
@@ -265,6 +253,15 @@ class HbaseSimulator:
             print(
                 f"\nValue error on: {command}\nToo many arguments for alter fuction.\nUsage: alter '<table_name>', '<column_family_name>', '<column_family_action>'\n"
             )
+            return False
+        
+        table_name = command[0].replace("'", "")
+        
+        print(table_name)
+        
+        # checking if the table is disabled
+        if self.check_string_in_file(table_name):
+            print(f"\n=> Hbase::Table - {table_name} is disabled.\n")
             return False
 
         # Getting the meta from the command
@@ -283,7 +280,7 @@ class HbaseSimulator:
 
             if action == "add":
                 if cf not in data["headers"]:
-                    data["headers"].append(cf)
+                    (cf)
                     for key in data["rows"]:
                         data["rows"][key][cf] = ""
                     file.seek(0)
@@ -357,6 +354,11 @@ class HbaseSimulator:
         if not os.path.exists(f"./HbaseCollections/{command}.json"):
             print(f"\n=> Hbase::Table - {command} does not exist.\n")
             return False
+        
+        # checking if the table is disabled
+        if self.check_string_in_file(command):
+            print(f"\n=> Hbase::Table - {command} is disabled.\n")
+            return False
 
         # Getting the headers of the table
         with open(f"./HbaseCollections/{command}.json", "r") as file:
@@ -365,10 +367,12 @@ class HbaseSimulator:
         # Printing the results
         print(f"\nTable {command}")
         print(f"{len(headers)} column(s)")
-        for header in headers:
-            print(header)
+        for header in data['headers']:
+                print(header)
         # Setting the end time of the function
         end_time = time.time()
+        print(f"{len(data['rows'])} column(s)")
+        
         print(f"\n=> Hbase::Table - {command} described in {round(end_time - start_time, 4)} seconds\n")
         return True
 
@@ -481,18 +485,21 @@ class HbaseSimulator:
         if table_name not in self.table_names:
             print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
             return False
-        # Deshabilitar la tabla
-        self.disable(f"disable '{table_name}'")
+
+
+        
         # Cargar datos de la tabla desde el archivo JSON
         with open(f"./HbaseCollections/{table_name}.json", "r") as f:
             data = json.load(f)
-        total_rows = len(data)
-        # Borrar el archivo JSON de la tabla
-        os.remove(f"./HbaseCollections/{table_name}.json")
+        
+        print('Table has :',len(data['rows']), 'rows.')
+        
+        data['rows'] = {}
+        self.disable(f"disable '{table_name}'")
         # Volver a habilitar la tabla
-        self.disable(f"enable '{table_name}'")
+        self.enable(f"enable '{table_name}'")
         # Imprimir filas eliminadas
-        print(f"\n=> Hbase::Table - {table_name} deleted {total_rows} rows.\n")
+        print(f"\n=> Hbase::Table - {table_name} deleted {len(data['rows'])} rows.\n")
         return True
     
     def insert_many(self, command: str) -> bool:
@@ -544,8 +551,10 @@ class HbaseSimulator:
         # Vaciar el archivo JSON de la tabla
         with open(f"./HbaseCollections/{table_name}.json", 'w') as file:
             file.write('{"headers":[],"rows":{}}')
+        self.disable(f"disable '{table_name}'")
 
         print(f"\n=> Hbase::Table - {table_name} truncated.\n")
+        self.enable(f"enable '{table_name}'")
         return True
 
     def update_many(self, command: str) -> bool:
@@ -582,6 +591,130 @@ class HbaseSimulator:
                 
         df.to_csv(f'./HbaseCollections/{table}.csv', index=False)
         return True
+  
+    def put(self, command: str) -> bool:
+        command = command.replace("put", "").replace(' ', '').replace("'","").split(",")
+        command = [spec.replace("'", "") for spec in command]
+
+        if len(command) != 4:
+            print("ERROR: Wrong number of arguments")
+            print("Usage: put '<table_name>', '<row_id>', '<column:subcolumn>', '<value>'")
+            return False
+        
+        
+
+        table_name = command[0]
+        row_id = command[1]
+        col_subcol = command[2].split(":")
+        new_value = command[3]
+
+        if self.check_string_in_file(table_name):
+            print(f"{table_name} is disabled.")
+            return False
+
+        # load the JSON data
+        with open(f'./HbaseCollections/{table_name}.json') as f:
+            data = json.load(f)
+        
+        if col_subcol[0] not in data['headers']:
+            print(f'Column name {col_subcol[0]} not found in headers.')
+            return False        
+        try:
+            row = data['rows'][row_id]
+            column = col_subcol[0]
+
+            # update the column and subcolumn
+            if column in data['headers'] and column in row:
+                subcolumn = col_subcol[1]
+                row[column][subcolumn] = new_value
+            else:
+                print(f'Column {column} added')
+                row[column] = {col_subcol[1]: new_value}
+        except KeyError:
+            # create a new row with the specified column and subcolumn
+            if col_subcol[0] in data['headers']:
+                data['rows'][row_id] = {col_subcol[0]: {col_subcol[1]: new_value}}
+            else:
+                print(f'Column name {col_subcol[0]} not found in headers.')
+                return False
+                
+            
+
+        # save the updated JSON data to file
+        with open(f'./HbaseCollections/{table_name}.json', 'w') as f:
+            json.dump(data, f)
+
+        return True
+
+    def enable(self, command):
+        # Setting the start time of the function
+        start = time.time()
+        # Removing the enable command from the command and splitting the command
+        command = command.replace("enable", "").replace(' ', '').split(",")
+        # Checking the command syntax
+        if len(command) < 1:
+            print(
+                f"\nValue error on: {command}\nToo many arguments for enable function.\nUsage: enable '<table_name>'\n"
+            )
+            return False
+        elif command[0][-1] != "'" or command[0][0] != "'":
+            print(
+                f"\nSyntax error on: {command[0]}\nCorrect use of single quotes is required.\nUsage: enable '<table_name>'\n"
+            )
+            return False
+        # Getting the table name from the command
+        command = command[0].replace("'", "")
+
+        direc = './HbaseCollections'
+        filename = f'{command}.json'
+        file_path = os.path.join(direc, filename)
+
+        # Checking if the table exists
+        if os.path.exists(file_path):
+            # Remove the name of the table from the disabled tables txt file
+            with open("./disabledTables.txt", 'r') as file:
+                file_contents = file.readlines()
+            with open("./disabledTables.txt", 'w') as file:
+                for line in file_contents:
+                    if line.strip() != command:
+                        file.write(line)
+            # Setting the end time of the function and printing the results
+            end = time.time()
+            # printing the results
+            print(f'0 row(s) in {round(end-start,4)} seconds')
+            print(f"\n=> Hbase::Table - {command} enabled")
+            return True
+        else:
+            print(f"\n=> Hbase::Table - {command} does not exist.\n")
+            return False
+
+    def scan(self, command: str):
+        command = command.replace("scan", "").replace(' ', '').split(",")
+
+        # Checking the command syntax
+        if len(command) != 1:
+            print(
+                f"\nValue error on: {command}\nToo many arguments for scan function.\nUsage: scan '<table_name>'\n"
+            )
+            return False
+
+        command = command[0].replace("'", "")
+        # Checking if the table exists
+        if command not in self.table_names:
+            print(f"\n=> Hbase::Table - {command} does not exist.\n")
+            return False
+
+        # checking if the table is disabled
+        if self.check_string_in_file(command):
+            print(f"\n=> Hbase::Table - {command} is disabled.\n")
+            return False
+
+        with open(f'./HbaseCollections/{command}.json', 'r') as file:
+            data = json.load(file)
+        
+        self.format_nested_json(data)
+        
+        return True
 
     def mainHBase(self):
         is_enabled = True
@@ -591,7 +724,7 @@ class HbaseSimulator:
         # Start the Hbase shell
         if initial == "hbase shell":
             print(
-                f"{datetime.today().strftime('%Y-%m-%d')} \nINFO [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available\n Hbase shell enter 'help<RETURN>' for list of supported commands. Type 'exit<RETURN>' to leave the HBase Shell\n Version 1.4.13, rUnknown\n")
+                f" \nINFO [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available\n Hbase shell enter 'help<RETURN>' for list of supported commands. Type 'exit<RETURN>' to leave the HBase Shell\n Version 1.4.13, rUnknown\n")
 
             
             while is_enabled:
@@ -604,14 +737,14 @@ class HbaseSimulator:
                     print(
                         '1 active master, 0 backup masters, 1 servers, 0 dead, 1.0000 average load')
 
-                # Version command
+                elif 'update_many' == command.split(" ")[0]:
+                    self.update_many(command)
+                    
+                
                 elif command == 'version':
                     print(
                         f'1.4.13, rJAA, {datetime.today().strftime("%Y-%m-%d")} ')
 
-                # TODO table help command
-                elif command == 'table_help':
-                    pass
                 # whoami command
                 elif command == "whoami":
                     print("cloudera (auth:SIMPLE)\n     groups: cloudera, default")
@@ -636,10 +769,19 @@ class HbaseSimulator:
                 # Disable table command
                 elif 'disable' == command.split(" ")[0]:
                     self.disable(command)
+                    
+                elif 'enable' == command.split(" ")[0]:
+                    self.enable(command)
 
                 elif 'scan' == command.split(" ")[0]:
                     self.scan(command)
-
+                    
+                elif 'alter' == command.split(" ")[0]:
+                    self.alter(command)
+                    
+                elif 'is_enabled'== command.split(" ")[0]:
+                    print(self.is_enabled(command))
+                    
                 elif 'count' == command.split(" ")[0]:
                     # conseguir el nombre de la tabla y el nombre de la columna
                     args = command.split(" ")
@@ -657,10 +799,13 @@ class HbaseSimulator:
                 # Drop table command
                 elif 'drop' == command.split(" ")[0]:
                     table_name = command.split(" ")[1].replace("'", "")
-                    
+                    self.drop(table_name)
+                
+                elif 'describe' == command.split(" ")[0]:
+                    self.describe(command)
 
-                elif 'drop_all' == command.split(" ")[0]:
-                    hbase.drop_all()
+                elif 'dropAll' == command.split(" ")[0]:
+                    hbase.dropAll()
 
                 elif 'delete' == command.split(" ")[0]:
                     self.delete(command)
@@ -671,13 +816,17 @@ class HbaseSimulator:
                 elif 'truncate' == command.split(" ")[0]:
                     table_name = command.split(" ")[1].replace("'", "")
                     self.truncate(table_name)
-                    self.drop(table_name)
+
+
 
                 elif 'put' == command.split(" ")[0]:
                     self.put(command)
 
                 elif 'get' == command.split(" ")[0]:
                     self.get(command)
+                    
+                elif 'scan' == command.split(" ")[0]:
+                    self.scan(command)
 
                 elif command == "exit<RETURN>" or command == "exit":
                     is_enabled = False
@@ -691,63 +840,89 @@ class HbaseSimulator:
         elif initial != '':
             print(f"ERROR: Unknown command '{initial}'")
 
-    def put(self, command: str) -> bool:
-        command = command.replace("put", "").replace(' ', '').replace("'","").split(",")
+    def is_enabled(self, table_name):
+        table_name = table_name.replace("is_enabled", "").replace(' ', '').replace("'",'')
+        with open('./disabledTables.txt', 'r') as file:
+            for line in file:
+                if table_name in line:
+                    return False
+            return True
+
+    def insert_many(self, command: str) -> bool:
+        # Parse the command to extract the table name and the data
+        parts = command.split("values")[0].split()
+        table_name = parts[2].replace("'", "")
+        column_names = [col.replace("'", "") for col in parts[3:-1]]
+        data = json.loads(command.split("values")[1])
+
+        # Load the table data from disk if it exists, otherwise create an empty dataframe
+        if table_name not in self.tables:
+            if not self.table_exists(table_name):
+                print(f"\n=> Hbase::Table - {table_name} does not exist.\n")
+                return False
+            self.tables[table_name] = pd.DataFrame(columns=["id"] + column_names)
+
+        table = self.tables[table_name]
+
+        # Append each row of data to the table
+        for row in data:
+            # Extract the ID from the row
+            id = row[0]
+
+            # Check if the row already exists in the table
+            if id in table["id"].values:
+                print(f"\n=> Hbase::Table - {table_name} - Row with ID '{id}' already exists, skipping insertion.\n")
+                continue
+
+            # Create a new row with the ID and the rest of the data
+            new_row = {"id": id}
+            for i, val in enumerate(row[1:]):
+                new_row[column_names[i]] = val
+
+            # Append the new row to the table
+            table = table.append(new_row, ignore_index=True)
+
+        # Save the updated table data to disk
+        table.to_json(f"./HbaseCollections/{table_name}.json", orient="records")
+
+        print(f"\n=> Hbase::Table - {table_name} - Inserted {len(data)} rows.\n")
+        return True  
+    
+    def update_many(self, command: str) -> bool:
+        command = command.replace("update_many", "").replace(' ', '').split(",")
         command = [spec.replace("'", "") for spec in command]
 
-        if len(command) != 4:
-            print("ERROR: Wrong number of arguments")
-            print("Usage: put '<table_name>', '<row_id>', '<column:subcolumn>', '<value>'")
+        # Extract the table name and check if it exists
+        table = command.pop(0)
+        self.load_table(table)
+
+        if table not in self.tables:
             return False
 
-        table_name = command[0]
-        row_id = command[1]
-        col_subcol = command[2].split(":")
-        new_value = command[3]
+        df = pd.read_csv(f'./HbaseCollections/{table}.csv')
 
-        # load the JSON data
-        with open(f'./HbaseCollections/{table_name}.json') as f:
-            data = json.load(f)
+        column_subcol = command.pop(0).split(":")
+        subcol = column_subcol[1]
 
-        print(data)
-        
-<<<<<<< Updated upstream
-        print(command)
-                    
-=======
-        if col_subcol[0] not in data['headers']:
-            print(f'Column name {col_subcol[0]} not found in headers.')
-            return False        
-        try:
-            row = data['rows'][row_id]
-            column = col_subcol[0]
+        updates = {}
+        for i in range(0, len(command), 2):
+            updates[command[i]] = command[i+1]
 
-            # update the column and subcolumn
-            if column in data['headers'] and column in row:
-                subcolumn = col_subcol[1]
-                row[column][subcolumn] = new_value
+        for id, value in updates.items():
+            # Check if the id is in the table, if not, create a new row, if it is, update the row
+            if id in df['id'].values:
+                row = df.loc[df['id'] == id, column_subcol[0]].iloc[0]
+                sub_col = pd.read_csv(StringIO(str(row)), index_col=0)
+                sub_col.loc[subcol, 0] = str(value)
+                df.loc[df['id'] == id, column_subcol[0]] = sub_col.to_csv(header=False, index=False)
             else:
-                print(f'Column {column} added')
-                data['headers'].append(column)
-                row[column] = {col_subcol[1]: new_value}
-        except KeyError:
-            # create a new row with the specified column and subcolumn
-            if col_subcol[0] in data['headers']:
-                data['rows'][row_id] = {col_subcol[0]: {col_subcol[1]: new_value}}
-            else:
-                print(f'Column name {col_subcol[0]} not found in headers.')
-                return False
+                new_row = {'id': id, f'{column_subcol[0]}': pd.DataFrame({f'{subcol}': [str(value)]})}
+                new_row_df = pd.DataFrame.from_dict(new_row, orient='index').T
+                df = pd.concat([df, new_row_df], ignore_index=True)
                 
-            
-
-        # save the updated JSON data to file
-        with open(f'./HbaseCollections/{table_name}.json', 'w') as f:
-            json.dump(data, f)
-
-        print(data)
->>>>>>> Stashed changes
+        df.to_csv(f'./HbaseCollections/{table}.csv', index=False)
         return True
-
+    
 def clear_screen():
     if os.name == 'nt':
         os.system('cls')
@@ -756,24 +931,7 @@ def clear_screen():
 
 
 hbase = HbaseSimulator()
-clear_screen()
-# hbase.mainHBase()
-
-<<<<<<< Updated upstream
-# hbase.create("create 'car', 'brand', 'year', 'color'")
-
-# hbase.scan("scan 'empleado'")
-
-# hbase.delete("delete 'car', '1', 'specs:HP'")
+# clear_screen()
+hbase.mainHBase()
 
 
-# hbase.alter("alter 'car', 'name', 'delete', 'caca'")
-
-hbase.disable("enable 'car'")
-
-# hbase.put("put 'car', '1', 'specs:HP', '100'")
-
-
-#hbase.scan("scan 'empleado'")
-=======
->>>>>>> Stashed changes

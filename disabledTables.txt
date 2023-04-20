@@ -1,4 +1,2 @@
-prueba
-pruebita
 empleado
-car
+prueba

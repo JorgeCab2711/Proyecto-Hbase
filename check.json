@@ -1,0 +1,37 @@
+{
+    "headers": [
+      "model",
+      "specs",
+      "release_date",
+      "color",
+      "release_date"
+    ],
+    "rows": {
+      "1": {
+        "model": {
+          "name": "Nissan GT-R Nismo"
+        },
+        "specs": {
+          "HP": "1972",
+          "Torque": "1254"
+        },
+        "release_date": {
+          "month": "07"
+        },
+        "color": "blue"
+      },
+      "2": {
+        "model": {
+          "name": "McLaren 720S"
+        },
+        "specs": {
+          "HP": "780",
+          "Torque": "531"
+        },
+        "release_date": {
+          "month": "02"
+        },
+        "color": "green"
+      }
+    }
+}
